@@ -1,3 +1,12 @@
+"""
+23/03/2021
+Medidor de temperatura do quarto utilizando Arduino UNO e LM35
+
+Autores:  Victor Cordeiro de Arruda 
+          Lucas Cordeiro de Arruda
+
+"""
+
 import serial
 import re
 import matplotlib.pyplot as plt
@@ -5,7 +14,11 @@ import numpy as np
 from itertools import count
 from matplotlib.animation import FuncAnimation
 import matplotlib.patches as mpl_patches
+from datetime import datetime
 
+def tempo_s_ms():
+    curr_time = datetime.now()
+    return curr_time.second + curr_time.microsecond/1000000
 
 def insere_legendas(temp_min, temp_media, temp_max, temp_actual):
     #Create the legend without superposing the data in the plot :D
@@ -18,52 +31,61 @@ def insere_legendas(temp_min, temp_media, temp_max, temp_actual):
     labels.append("máx =  %.2f ºC" %temp_max)
     labels.append("média = %.2f ºC" %temp_media)
     labels.append("mín = %.2f ºC" %temp_min)
-    labels.append("actual = %.2f ºC" %temp_actual)
-
+    labels.append("atual = %.2f ºC" %temp_actual)
+    
     # create the legend, supressing the blank space of the empty line symbol and the
     # padding between symbol and label by setting handlelenght and handletextpad
     plt.legend(handles, labels, loc='best', fontsize='small', fancybox=True, framealpha=0.7, handlelength=0, handletextpad=0)
 
 
-s = serial.Serial('COM3', 9600)
-
-temperature = list()
-
-x_vals = []
-
-plt.style.use('dark_background')
-index = count()
-
-
 def animate(i):
-
     #obtém o valor da temperatura do quarto
     res = s.read(3)
     temperature.append((110/1023)*int(res.decode('utf-8')))
-    x_vals.append(next(index))
     
     #resolve o bug do primeiro valor em aproximadamente 26 graus
     if i==0:
         temperature.clear()
         x_vals.clear()
         plt.cla()
-
+        
+        #define o valor de início da aquisição de temperatura
+        global start_time
+        start_time = datetime.now()
+        
+        
     if i>0:
         temp_min = min(temperature)
         temp_max = max(temperature)
         temp_media = sum(temperature)/len(temperature)
-        temp_actual = temperature[-1]
+        temp_atual = temperature[-1]
         plt.cla()
-        plt.title('Temperatura x tempo')
+        plt.title('Temperatura x tempo (Início: %s)' %start_time.strftime("%Y-%m-%d %H:%M:%S"))
         plt.xlabel("Tempo (min)")
         plt.ylabel("Temperatura (ºC)")
-        insere_legendas(temp_min, temp_media, temp_max, temp_actual)
+        insere_legendas(temp_min, temp_media, temp_max, temp_atual)
 
-        #converte para minutos
-        x_min = [float(x)/ 600 for x in x_vals]
-        plt.plot(x_min, temperature)
+        #calcula o tempo decorrido e converte para minutos
+        tempo_agora = datetime.now()
+        time_delta = tempo_agora - start_time
+        total_seconds = time_delta.total_seconds()
+        total_minutes = total_seconds/60
+        x_vals.append(total_minutes)
 
-       
+        #plota os valores obtidos
+        plt.plot(x_vals, temperature)
+        
+
+s = serial.Serial('COM3', 9600)
+
+temperature = list()
+
+x_vals = []
+x_min = []
+
+plt.style.use('dark_background')
+index = count()
+
 ani = FuncAnimation(plt.gcf(), animate, interval = 100)
 
 plt.tight_layout()
