@@ -45,6 +45,7 @@ def animate(i):
     if i==0:
         temperature.clear()
         x_vals.clear()
+        plt.cla()
 
     if i>0:
         temp_min = min(temperature)
@@ -52,13 +53,16 @@ def animate(i):
         temp_media = sum(temperature)/len(temperature)
         plt.cla()
         plt.title('Temperatura do quarto x tempo')
-        plt.xlabel("Tempo (s)")
+        plt.xlabel("Tempo (min)")
         plt.ylabel("Temperatura (ºC)")
         insere_legendas(temp_min, temp_media, temp_max)
-        plt.plot(x_vals, temperature)
+
+        #converte para minutos
+        x_min = [float(x)/ 120 for x in x_vals]
+        plt.plot(x_min, temperature)
 
        
-ani = FuncAnimation(plt.gcf(), animate, interval = 1000)
+ani = FuncAnimation(plt.gcf(), animate, interval = 500)
 
 plt.tight_layout()
 plt.show()
